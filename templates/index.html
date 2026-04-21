@@ -1,0 +1,921 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>TruthLens — News Verification Tool</title>
+    <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;600;700&family=Source+Sans+3:wght@300;400;500;600&family=Source+Code+Pro:wght@400;500&display=swap" rel="stylesheet" />
+    <style>
+        *,
+        *::before,
+        *::after {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+        
+         :root {
+            --ink: #1a1a1a;
+            --ink-2: #3d3d3d;
+            --ink-3: #707070;
+            --ink-4: #a0a0a0;
+            --paper: #f9f7f2;
+            --paper-2: #f0ede4;
+            --paper-3: #e8e3d8;
+            --rule: #d4cfc4;
+            --red: #c0392b;
+            --red-bg: #fdf0ee;
+            --green: #1a6b3a;
+            --green-bg: #eef6f1;
+            --amber: #b5520a;
+            --amber-bg: #fef6ee;
+            --col: 680px;
+        }
+        
+        body {
+            background: var(--paper);
+            color: var(--ink);
+            font-family: 'Source Sans 3', sans-serif;
+            font-weight: 400;
+            line-height: 1.6;
+            min-height: 100vh;
+        }
+        
+        .masthead {
+            border-bottom: 3px double var(--ink);
+            padding: 18px 24px 14px;
+            display: flex;
+            align-items: baseline;
+            gap: 24px;
+            max-width: var(--col);
+            margin: 0 auto;
+        }
+        
+        .masthead-name {
+            font-family: 'Playfair Display', serif;
+            font-size: 28px;
+            font-weight: 700;
+            letter-spacing: -0.01em;
+        }
+        
+        .masthead-name span {
+            color: var(--red);
+        }
+        
+        .masthead-meta {
+            font-size: 11px;
+            color: var(--ink-3);
+            letter-spacing: 0.06em;
+            text-transform: uppercase;
+            border-left: 1px solid var(--rule);
+            padding-left: 16px;
+            line-height: 1.4;
+        }
+        
+        .masthead-date {
+            margin-left: auto;
+            font-size: 11px;
+            color: var(--ink-3);
+            letter-spacing: 0.04em;
+        }
+        
+        .page {
+            max-width: var(--col);
+            margin: 0 auto;
+            padding: 32px 24px 80px;
+        }
+        
+        .rule-label {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            margin-bottom: 20px;
+        }
+        
+        .rule-label::before,
+        .rule-label::after {
+            content: '';
+            flex: 1;
+            height: 1px;
+            background: var(--rule);
+        }
+        
+        .rule-label span {
+            font-size: 10px;
+            letter-spacing: 0.18em;
+            text-transform: uppercase;
+            color: var(--ink-4);
+            white-space: nowrap;
+        }
+        
+        .mode-toggle {
+            display: flex;
+            border: 1px solid var(--rule);
+            border-radius: 3px;
+            overflow: hidden;
+            margin-bottom: 24px;
+            background: var(--paper-2);
+        }
+        
+        .mode-btn {
+            flex: 1;
+            padding: 10px 16px;
+            background: transparent;
+            border: none;
+            border-right: 1px solid var(--rule);
+            font-family: 'Source Sans 3', sans-serif;
+            font-size: 13px;
+            font-weight: 500;
+            letter-spacing: 0.05em;
+            text-transform: uppercase;
+            color: var(--ink-3);
+            cursor: pointer;
+            transition: all 0.15s;
+        }
+        
+        .mode-btn:last-child {
+            border-right: none;
+        }
+        
+        .mode-btn.active {
+            background: var(--ink);
+            color: var(--paper);
+        }
+        
+        .mode-btn:hover:not(.active) {
+            background: var(--paper-3);
+            color: var(--ink);
+        }
+        
+        .panel {
+            display: none;
+        }
+        
+        .panel.active {
+            display: block;
+        }
+        
+        .field-label {
+            font-size: 11px;
+            font-weight: 600;
+            letter-spacing: 0.12em;
+            text-transform: uppercase;
+            color: var(--ink-3);
+            margin-bottom: 8px;
+        }
+        
+        textarea {
+            width: 100%;
+            min-height: 160px;
+            background: white;
+            border: 1px solid var(--rule);
+            border-radius: 2px;
+            color: var(--ink);
+            font-family: 'Source Sans 3', sans-serif;
+            font-size: 15px;
+            line-height: 1.7;
+            padding: 14px 16px;
+            resize: vertical;
+            outline: none;
+            transition: border-color 0.15s;
+        }
+        
+        textarea:focus {
+            border-color: var(--ink-2);
+        }
+        
+        textarea::placeholder {
+            color: var(--ink-4);
+            font-style: italic;
+        }
+        
+        .url-row {
+            display: flex;
+            align-items: center;
+            background: white;
+            border: 1px solid var(--rule);
+            border-radius: 2px;
+            overflow: hidden;
+            transition: border-color 0.15s;
+        }
+        
+        .url-row:focus-within {
+            border-color: var(--ink-2);
+        }
+        
+        .url-prefix {
+            padding: 0 12px;
+            font-size: 12px;
+            color: var(--ink-4);
+            font-family: 'Source Code Pro', monospace;
+            border-right: 1px solid var(--rule);
+            background: var(--paper-2);
+            align-self: stretch;
+            display: flex;
+            align-items: center;
+            white-space: nowrap;
+        }
+        
+        input[type="url"] {
+            flex: 1;
+            padding: 13px 14px;
+            border: none;
+            background: transparent;
+            font-family: 'Source Code Pro', monospace;
+            font-size: 13px;
+            color: var(--ink);
+            outline: none;
+        }
+        
+        input[type="url"]::placeholder {
+            color: var(--ink-4);
+        }
+        
+        .hint {
+            margin-top: 8px;
+            font-size: 12px;
+            color: var(--ink-4);
+            font-style: italic;
+        }
+        
+        .btn-submit {
+            margin-top: 20px;
+            width: 100%;
+            padding: 13px 24px;
+            background: var(--ink);
+            color: var(--paper);
+            border: none;
+            border-radius: 2px;
+            font-family: 'Source Sans 3', sans-serif;
+            font-size: 13px;
+            font-weight: 600;
+            letter-spacing: 0.1em;
+            text-transform: uppercase;
+            cursor: pointer;
+            transition: background 0.15s;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
+        }
+        
+        .btn-submit:hover {
+            background: var(--ink-2);
+        }
+        
+        .btn-submit:disabled {
+            background: var(--ink-4);
+            cursor: not-allowed;
+        }
+        
+        .btn-spinner {
+            width: 14px;
+            height: 14px;
+            border: 1.5px solid rgba(255, 255, 255, 0.3);
+            border-top-color: white;
+            border-radius: 50%;
+            animation: spin 0.7s linear infinite;
+            display: none;
+        }
+        
+        @keyframes spin {
+            to {
+                transform: rotate(360deg);
+            }
+        }
+        
+        .error-strip {
+            margin-top: 16px;
+            padding: 12px 16px;
+            background: var(--red-bg);
+            border-left: 3px solid var(--red);
+            font-size: 13px;
+            color: var(--red);
+            display: none;
+            border-radius: 0 2px 2px 0;
+        }
+        
+        .error-strip.show {
+            display: block;
+        }
+        
+        #results {
+            display: none;
+            margin-top: 36px;
+        }
+        
+        #results.show {
+            display: block;
+            animation: fadeIn 0.35s ease;
+        }
+        
+        @keyframes fadeIn {
+            from {
+                opacity: 0;
+                transform: translateY(8px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+        
+        .verdict-block {
+            padding: 24px;
+            border: 1px solid;
+            border-radius: 2px;
+            margin-bottom: 20px;
+            display: flex;
+            align-items: flex-start;
+            gap: 20px;
+        }
+        
+        .verdict-block.fake {
+            background: var(--red-bg);
+            border-color: #e8b5b0;
+        }
+        
+        .verdict-block.real {
+            background: var(--green-bg);
+            border-color: #a8d4b8;
+        }
+        
+        .verdict-stamp {
+            font-family: 'Playfair Display', serif;
+            font-size: 11px;
+            font-weight: 600;
+            letter-spacing: 0.2em;
+            text-transform: uppercase;
+            padding: 6px 12px;
+            border: 2px solid;
+            border-radius: 2px;
+            transform: rotate(-2deg);
+            flex-shrink: 0;
+            margin-top: 2px;
+        }
+        
+        .verdict-block.fake .verdict-stamp {
+            color: var(--red);
+            border-color: var(--red);
+        }
+        
+        .verdict-block.real .verdict-stamp {
+            color: var(--green);
+            border-color: var(--green);
+        }
+        
+        .verdict-heading {
+            font-family: 'Playfair Display', serif;
+            font-size: 22px;
+            font-weight: 700;
+            line-height: 1.2;
+            margin-bottom: 6px;
+        }
+        
+        .verdict-block.fake .verdict-heading {
+            color: var(--red);
+        }
+        
+        .verdict-block.real .verdict-heading {
+            color: var(--green);
+        }
+        
+        .verdict-conf {
+            font-size: 13px;
+            color: var(--ink-3);
+        }
+        
+        .prob-section {
+            background: white;
+            border: 1px solid var(--rule);
+            border-radius: 2px;
+            padding: 18px 20px;
+            margin-bottom: 20px;
+        }
+        
+        .prob-row {
+            display: flex;
+            align-items: center;
+            gap: 14px;
+            margin-bottom: 10px;
+        }
+        
+        .prob-row:last-child {
+            margin-bottom: 0;
+        }
+        
+        .prob-name {
+            font-size: 11px;
+            font-weight: 600;
+            letter-spacing: 0.1em;
+            text-transform: uppercase;
+            width: 56px;
+            flex-shrink: 0;
+        }
+        
+        .prob-name.fake {
+            color: var(--red);
+        }
+        
+        .prob-name.real {
+            color: var(--green);
+        }
+        
+        .prob-track {
+            flex: 1;
+            height: 6px;
+            background: var(--paper-3);
+            border-radius: 1px;
+            overflow: hidden;
+        }
+        
+        .prob-fill {
+            height: 100%;
+            border-radius: 1px;
+            width: 0;
+            transition: width 0.9s cubic-bezier(0.16, 1, 0.3, 1);
+        }
+        
+        .prob-fill.fake {
+            background: var(--red);
+        }
+        
+        .prob-fill.real {
+            background: var(--green);
+        }
+        
+        .prob-num {
+            font-family: 'Source Code Pro', monospace;
+            font-size: 13px;
+            width: 36px;
+            text-align: right;
+            color: var(--ink-2);
+            flex-shrink: 0;
+        }
+        
+        .analysis-section {
+            background: white;
+            border: 1px solid var(--rule);
+            border-radius: 2px;
+            padding: 18px 20px;
+            margin-bottom: 20px;
+        }
+        
+        .section-head {
+            font-size: 10px;
+            font-weight: 600;
+            letter-spacing: 0.18em;
+            text-transform: uppercase;
+            color: var(--ink-4);
+            margin-bottom: 10px;
+            padding-bottom: 8px;
+            border-bottom: 1px solid var(--rule);
+        }
+        
+        .analysis-body {
+            font-size: 15px;
+            line-height: 1.75;
+            color: var(--ink-2);
+        }
+        
+        .flags-row {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 16px;
+            margin-bottom: 20px;
+        }
+        
+        @media (max-width: 520px) {
+            .flags-row {
+                grid-template-columns: 1fr;
+            }
+        }
+        
+        .flags-block {
+            background: white;
+            border: 1px solid var(--rule);
+            border-radius: 2px;
+            padding: 16px 18px;
+        }
+        
+        .flag-entry {
+            display: flex;
+            align-items: flex-start;
+            gap: 10px;
+            padding: 7px 0;
+            border-bottom: 1px solid var(--paper-2);
+            font-size: 13px;
+            line-height: 1.5;
+            color: var(--ink-2);
+        }
+        
+        .flag-entry:first-child {
+            padding-top: 0;
+        }
+        
+        .flag-entry:last-child {
+            border-bottom: none;
+            padding-bottom: 0;
+        }
+        
+        .flag-marker {
+            width: 5px;
+            height: 5px;
+            border-radius: 50%;
+            flex-shrink: 0;
+            margin-top: 6px;
+        }
+        
+        .flag-marker.red {
+            background: var(--red);
+        }
+        
+        .flag-marker.green {
+            background: var(--green);
+        }
+        
+        .flag-marker.amber {
+            background: var(--amber);
+        }
+        
+        .video-meta-block {
+            background: white;
+            border: 1px solid var(--rule);
+            border-radius: 2px;
+            padding: 18px 20px;
+            margin-bottom: 20px;
+            display: none;
+        }
+        
+        .meta-kv-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 12px 20px;
+            margin-bottom: 14px;
+        }
+        
+        .meta-kv-key {
+            font-size: 10px;
+            letter-spacing: 0.14em;
+            text-transform: uppercase;
+            color: var(--ink-4);
+            margin-bottom: 2px;
+        }
+        
+        .meta-kv-val {
+            font-size: 13px;
+            color: var(--ink);
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+        }
+        
+        .transcript-box {
+            background: var(--paper-2);
+            border: 1px solid var(--rule);
+            border-radius: 2px;
+            padding: 12px 14px;
+            font-size: 12px;
+            line-height: 1.7;
+            color: var(--ink-3);
+            font-style: italic;
+        }
+        
+        .video-flags-block {
+            display: none;
+        }
+        
+        .sources-section {
+            background: white;
+            border: 1px solid var(--rule);
+            border-radius: 2px;
+            padding: 14px 18px;
+            margin-bottom: 20px;
+            font-size: 12px;
+            color: var(--ink-3);
+        }
+        
+        .page-footer {
+            margin-top: 40px;
+            padding-top: 16px;
+            border-top: 1px solid var(--rule);
+            font-size: 11px;
+            color: var(--ink-4);
+            letter-spacing: 0.04em;
+            text-align: center;
+        }
+    </style>
+</head>
+
+<body>
+    <div class="masthead">
+        <div class="masthead-name">Truth<span>Lens</span></div>
+        <div class="masthead-meta">News Verification<br>&amp; Credibility Analysis</div>
+        <div class="masthead-date" id="hdr-date"></div>
+    </div>
+
+    <div class="page">
+        <div class="rule-label"><span>Submit content for analysis</span></div>
+        <div class="mode-toggle">
+            <button class="mode-btn active" data-mode="text">Text / Article</button>
+            <button class="mode-btn" data-mode="video">YouTube Video</button>
+        </div>
+
+        <div class="panel active" id="panel-text">
+            <div class="field-label">Article text or headline</div>
+            <textarea id="input-text" placeholder="Paste the news article, headline, or claim you want to verify…"></textarea>
+            <button class="btn-submit" id="btn-text">
+        <div class="btn-spinner" id="spin-text"></div>
+        <span id="lbl-text">Verify Text</span>
+      </button>
+        </div>
+
+        <div class="panel" id="panel-video">
+            <div class="field-label">YouTube video URL</div>
+            <div class="url-row">
+                <div class="url-prefix">youtube.com</div>
+                <input type="url" id="input-url" placeholder="Paste full video URL here" />
+            </div>
+            <p class="hint">Supports youtube.com/watch?v= and youtu.be/ links</p>
+            <button class="btn-submit" id="btn-video">
+        <div class="btn-spinner" id="spin-video"></div>
+        <span id="lbl-video">Verify Video</span>
+      </button>
+        </div>
+
+        <div class="error-strip" id="error-strip"></div>
+
+        <div id="results">
+            <div class="rule-label" style="margin-top:8px"><span>Verification report</span></div>
+
+            <div class="video-meta-block" id="vm-block">
+                <div class="section-head">Video details</div>
+                <div class="meta-kv-grid">
+                    <div>
+                        <div class="meta-kv-key">Title</div>
+                        <div class="meta-kv-val" id="vm-title">—</div>
+                    </div>
+                    <div>
+                        <div class="meta-kv-key">Channel</div>
+                        <div class="meta-kv-val" id="vm-channel">—</div>
+                    </div>
+                    <div>
+                        <div class="meta-kv-key">Published</div>
+                        <div class="meta-kv-val" id="vm-date">—</div>
+                    </div>
+                    <div>
+                        <div class="meta-kv-key">View count</div>
+                        <div class="meta-kv-val" id="vm-views">—</div>
+                    </div>
+                </div>
+                <div class="section-head">Description excerpt</div>
+                <div class="transcript-box" id="vm-transcript">—</div>
+            </div>
+
+            <div class="verdict-block" id="verdict-block">
+                <div class="verdict-stamp" id="verdict-stamp">—</div>
+                <div>
+                    <div class="verdict-heading" id="verdict-heading">—</div>
+                    <div class="verdict-conf" id="verdict-conf">—</div>
+                </div>
+            </div>
+
+            <div class="prob-section">
+                <div class="prob-row">
+                    <div class="prob-name fake">Fake</div>
+                    <div class="prob-track">
+                        <div class="prob-fill fake" id="pbar-fake"></div>
+                    </div>
+                    <div class="prob-num" id="pnum-fake"></div>
+                </div>
+                <div class="prob-row">
+                    <div class="prob-name real">Credible</div>
+                    <div class="prob-track">
+                        <div class="prob-fill real" id="pbar-real"></div>
+                    </div>
+                    <div class="prob-num" id="pnum-real"></div>
+                </div>
+            </div>
+
+            <div class="analysis-section">
+                <div class="section-head">Editorial assessment</div>
+                <div class="analysis-body" id="analysis-body">—</div>
+            </div>
+
+            <div class="flags-row">
+                <div class="flags-block">
+                    <div class="section-head">Red flags</div>
+                    <div id="list-red"></div>
+                </div>
+                <div class="flags-block">
+                    <div class="section-head">Credibility signals</div>
+                    <div id="list-green"></div>
+                </div>
+            </div>
+
+            <div class="video-flags-block" id="vf-block">
+                <div class="flags-block" style="margin-bottom:20px">
+                    <div class="section-head">Video-specific observations</div>
+                    <div id="list-amber"></div>
+                </div>
+            </div>
+
+            <div class="sources-section" id="sources-section" style="display:none">
+                <strong style="font-size:11px;letter-spacing:.1em;text-transform:uppercase;color:var(--ink-4)">Sources checked via NewsAPI — </strong>
+                <span id="sources-list"></span>
+            </div>
+
+            <div class="page-footer">
+                TruthLens uses NewsAPI &amp; YouTube Data API for cross-referencing. Always verify with primary sources.
+            </div>
+        </div>
+    </div>
+
+    <script>
+        document.getElementById('hdr-date').textContent = new Date().toLocaleDateString('en-GB', {
+            weekday: 'short',
+            day: 'numeric',
+            month: 'long',
+            year: 'numeric'
+        });
+
+        document.querySelectorAll('.mode-btn').forEach(btn => {
+            btn.addEventListener('click', () => {
+                document.querySelectorAll('.mode-btn').forEach(b => b.classList.remove('active'));
+                document.querySelectorAll('.panel').forEach(p => p.classList.remove('active'));
+                btn.classList.add('active');
+                document.getElementById('panel-' + btn.dataset.mode).classList.add('active');
+                clearAll();
+            });
+        });
+
+        function clearAll() {
+            document.getElementById('error-strip').classList.remove('show');
+            document.getElementById('results').classList.remove('show');
+        }
+
+        function showError(msg) {
+            const el = document.getElementById('error-strip');
+            el.textContent = msg;
+            el.classList.add('show');
+        }
+
+        function setLoading(btnId, spinId, lblId, on, def) {
+            document.getElementById(btnId).disabled = on;
+            document.getElementById(spinId).style.display = on ? 'block' : 'none';
+            document.getElementById(lblId).textContent = on ? 'Analysing…' : def;
+        }
+
+        function buildFlagList(containerId, items, markerClass) {
+            const el = document.getElementById(containerId);
+            if (!items || items.length === 0) {
+                el.innerHTML = `<div class="flag-entry"><div class="flag-marker ${markerClass}"></div><span>None identified</span></div>`;
+                return;
+            }
+            el.innerHTML = items.map(i =>
+                `<div class="flag-entry"><div class="flag-marker ${markerClass}"></div><span>${i}</span></div>`
+            ).join('');
+        }
+
+        function fmtDate(s) {
+            if (!s || s.length !== 8) return s || '—';
+            return s.slice(0, 4) + ' / ' + s.slice(4, 6) + ' / ' + s.slice(6, 8);
+        }
+
+        function fmtNum(n) {
+            if (!n) return '—';
+            if (n >= 1e9) return (n / 1e9).toFixed(1) + 'B';
+            if (n >= 1e6) return (n / 1e6).toFixed(1) + 'M';
+            if (n >= 1e3) return (n / 1e3).toFixed(1) + 'K';
+            return String(n);
+        }
+
+        function renderResult(data, isVideo) {
+            clearAll();
+            const fake = data.prediction === 'Fake';
+            const vblock = document.getElementById('verdict-block');
+            vblock.className = 'verdict-block ' + (fake ? 'fake' : 'real');
+            document.getElementById('verdict-stamp').textContent = fake ? 'Disputed' : 'Credible';
+            document.getElementById('verdict-heading').textContent = fake ? 'Likely misinformation' : 'Appears credible';
+            document.getElementById('verdict-conf').textContent = `Assessment confidence: ${data.confidence}%`;
+
+            const fp = data.fake_probability,
+                rp = data.real_probability;
+            document.getElementById('pnum-fake').textContent = fp + '%';
+            document.getElementById('pnum-real').textContent = rp + '%';
+            requestAnimationFrame(() => setTimeout(() => {
+                document.getElementById('pbar-fake').style.width = fp + '%';
+                document.getElementById('pbar-real').style.width = rp + '%';
+            }, 60));
+
+            document.getElementById('analysis-body').textContent = data.reasoning || '—';
+            buildFlagList('list-red', data.red_flags, 'red');
+            buildFlagList('list-green', data.credibility_signals, 'green');
+
+            const vmBlock = document.getElementById('vm-block');
+            const vfBlock = document.getElementById('vf-block');
+            if (isVideo && data.video_metadata) {
+                vmBlock.style.display = 'block';
+                vfBlock.style.display = 'block';
+                const m = data.video_metadata;
+                document.getElementById('vm-title').textContent = m.title || '—';
+                document.getElementById('vm-channel').textContent = m.channel || '—';
+                document.getElementById('vm-date').textContent = fmtDate(m.upload_date);
+                document.getElementById('vm-views').textContent = fmtNum(m.view_count);
+                document.getElementById('vm-transcript').textContent = m.transcript_preview || 'No description available.';
+                buildFlagList('list-amber', data.video_specific_flags, 'amber');
+            } else {
+                vmBlock.style.display = 'none';
+                vfBlock.style.display = 'none';
+            }
+
+            const srcSec = document.getElementById('sources-section');
+            if (!isVideo && data.sources_checked && data.sources_checked.length > 0) {
+                srcSec.style.display = 'block';
+                document.getElementById('sources-list').textContent = data.sources_checked.join(', ');
+            } else {
+                srcSec.style.display = 'none';
+            }
+
+            const results = document.getElementById('results');
+            results.classList.add('show');
+            results.scrollIntoView({
+                behavior: 'smooth',
+                block: 'start'
+            });
+        }
+
+        document.getElementById('btn-text').addEventListener('click', async() => {
+            const text = document.getElementById('input-text').value.trim();
+            if (!text) {
+                showError('Please paste some text to analyse.');
+                return;
+            }
+            if (text.length < 20) {
+                showError('The text is too short for a reliable assessment.');
+                return;
+            }
+            clearAll();
+            setLoading('btn-text', 'spin-text', 'lbl-text', true, 'Verify Text');
+            try {
+                const res = await fetch('/predict', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        text
+                    })
+                });
+                const data = await res.json();
+                if (data.error) {
+                    showError(data.error);
+                    return;
+                }
+                renderResult(data, false);
+            } catch {
+                showError('Connection error — is the Flask server running on port 5000?');
+            } finally {
+                setLoading('btn-text', 'spin-text', 'lbl-text', false, 'Verify Text');
+            }
+        });
+
+        document.getElementById('btn-video').addEventListener('click', async() => {
+            const url = document.getElementById('input-url').value.trim();
+            if (!url) {
+                showError('Please enter a YouTube URL.');
+                return;
+            }
+            clearAll();
+            setLoading('btn-video', 'spin-video', 'lbl-video', true, 'Verify Video');
+            try {
+                const res = await fetch('/analyze-video', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        url
+                    })
+                });
+                const data = await res.json();
+                if (data.error) {
+                    showError(data.error);
+                    return;
+                }
+                renderResult(data, true);
+            } catch {
+                showError('Connection error — is the Flask server running on port 5000?');
+            } finally {
+                setLoading('btn-video', 'spin-video', 'lbl-video', false, 'Verify Video');
+            }
+        });
+
+        document.getElementById('input-url').addEventListener('keydown', e => {
+            if (e.key === 'Enter') document.getElementById('btn-video').click();
+        });
+    </script>
+</body>
+
+</html>
